@@ -418,11 +418,16 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
         // Get parent folder
         const parentFolder = fileToReveal.parent;
 
-        // Focused Folder needs to be root for the reveal
-        if (focusedFolder && focusedFolder.path !== '/') setFocusedFolder(plugin.app.vault.getRoot());
-
         // Sanity check - Parent to be folder and set required component states
         if (parentFolder instanceof TFolder) {
+            
+            // 【修改点】: 
+            // 原逻辑：if (focusedFolder && focusedFolder.path !== '/') setFocusedFolder(plugin.app.vault.getRoot());
+            // 新逻辑：如果当前聚焦的文件夹不是目标文件的父文件夹，则直接聚焦到该父文件夹 (B)
+            if (focusedFolder && focusedFolder.path !== parentFolder.path) {
+                setFocusedFolder(parentFolder);
+            }
+
             // Set Active Folder - It will trigger auto file list update
             setActiveFolderPath(parentFolder.path);
 
@@ -430,11 +435,16 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
             setActiveOzFile(FileTreeUtils.TFile2OZFile(fileToReveal));
 
             // Set openfolders to expand in the folder list
+            // 注意：因为我们已经 Focus 进去了，其实不需要展开父文件夹以上的层级了，
+            // 但保留这个逻辑也没坏处，防止某些边缘情况。
             const foldersToOpen = getAllFoldersToOpen(fileToReveal);
             let openFoldersSet = new Set([...openFolders, ...foldersToOpen]);
             setOpenFolders(Array.from(openFoldersSet));
 
             scrollToFile(FileTreeUtils.TFile2OZFile(fileToReveal));
+            
+            // 如果已经聚焦进去了，父文件夹就是视图的“顶”，不需要滚动找它了，
+            // 但保留着也无妨，代码会尝试找这个元素。
             scrollToFolder(parentFolder);
         }
     }
