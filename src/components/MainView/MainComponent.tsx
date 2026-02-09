@@ -415,37 +415,36 @@ export default function MainTreeComponent(props: MainTreeComponentProps) {
         const fileToReveal = plugin.app.vault.getAbstractFileByPath(ozFileToReveal.path) as TFile;
         if (!fileToReveal) return;
 
-        // Get parent folder
+        // 1. 获取直接父文件夹 (例如: A/B/C.md -> 获取 B)
         const parentFolder = fileToReveal.parent;
+
+        // 2. 【核心修改】尝试获取"爷爷"文件夹 (例如: 获取 A)
+        // 如果 parentFolder 是根目录，它的 parent 是 null，这时候我们就兜底使用 parentFolder 自身
+        const grandParentFolder = parentFolder.parent ? parentFolder.parent : parentFolder;
 
         // Sanity check - Parent to be folder and set required component states
         if (parentFolder instanceof TFolder) {
             
-            // 【修改点】: 
-            // 原逻辑：if (focusedFolder && focusedFolder.path !== '/') setFocusedFolder(plugin.app.vault.getRoot());
-            // 新逻辑：如果当前聚焦的文件夹不是目标文件的父文件夹，则直接聚焦到该父文件夹 (B)
-            if (focusedFolder && focusedFolder.path !== parentFolder.path) {
-                setFocusedFolder(parentFolder);
+            // 3. 聚焦逻辑：我们要聚焦的是"爷爷" (grandParentFolder)
+            if (!focusedFolder || focusedFolder.path !== grandParentFolder.path) {
+                setFocusedFolder(grandParentFolder);
             }
 
-            // Set Active Folder - It will trigger auto file list update
+            // Set Active Folder - 这里依然设置为直接父文件夹(B)，因为我们希望文件列表展示的是 C.md 所在的那一层
             setActiveFolderPath(parentFolder.path);
 
             // Set active file to show in the list
             setActiveOzFile(FileTreeUtils.TFile2OZFile(fileToReveal));
 
             // Set openfolders to expand in the folder list
-            // 注意：因为我们已经 Focus 进去了，其实不需要展开父文件夹以上的层级了，
-            // 但保留这个逻辑也没坏处，防止某些边缘情况。
+            // 这一步很重要，因为我们聚焦到了 A，必须确保 A 里面的 B 是展开状态，才能看到 B 被高亮
             const foldersToOpen = getAllFoldersToOpen(fileToReveal);
             let openFoldersSet = new Set([...openFolders, ...foldersToOpen]);
             setOpenFolders(Array.from(openFoldersSet));
 
+            // 滚动定位
             scrollToFile(FileTreeUtils.TFile2OZFile(fileToReveal));
-            
-            // 如果已经聚焦进去了，父文件夹就是视图的“顶”，不需要滚动找它了，
-            // 但保留着也无妨，代码会尝试找这个元素。
-            scrollToFolder(parentFolder);
+            scrollToFolder(parentFolder); // 让左侧文件夹树滚动到 B 的位置
         }
     }
 

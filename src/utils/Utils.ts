@@ -175,7 +175,7 @@ export const createNewFile = async (e: React.MouseEvent | null, folderPath: stri
 };
 
 export const getBookmarksPluginItems = (): BookmarksPluginItem[] => {
-    return (app as any).internalPlugins.plugins['bookmarks'].instance.items as BookmarksPluginItem[];
+    return (window as any).app.internalPlugins.plugins['bookmarks'].instance.items as BookmarksPluginItem[];
 };
 
 export const getBookmarkTitle = (title: string): BookmarksPluginItem => {
